@@ -6,8 +6,6 @@ import com.ecommerce.microcommerce.web.exceptions.ProduitIntrouvableException;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.json.MappingJacksonValue;
@@ -16,10 +14,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
-
-@Api( description="API pour es opérations CRUD sur les produits.")
 
 @RestController
 public class ProductController {
@@ -49,7 +47,6 @@ public class ProductController {
 
 
     //Récupérer un produit par son Id
-    @ApiOperation(value = "Récupère un produit grâce à son ID à condition que celui-ci soit en stock!")
     @GetMapping(value = "/Produits/{id}")
 
     public Product afficherUnProduit(@PathVariable int id) {
@@ -102,7 +99,28 @@ public class ProductController {
 
         return productDao.chercherUnProduitCher(400);
     }
+    
+    @GetMapping(value = "/AdminProduits")
+    public MappingJacksonValue calculerMargeProduit() {
 
+        Iterable<Product> produits = productDao.findAll();
+         
+        Map<Product, Integer> mapMargeProduit = new LinkedHashMap<Product, Integer>();
+        
+        for (Product product : produits) {
+			int marge = (product.getPrix() - product.getPrixAchat());
+			mapMargeProduit.put(product, marge);
+		}
+        
+        SimpleBeanPropertyFilter monFiltre = SimpleBeanPropertyFilter.serializeAllExcept("prixAchat");
 
+        FilterProvider listDeNosFiltres = new SimpleFilterProvider().addFilter("monFiltreDynamique", monFiltre);
+
+        MappingJacksonValue produitsFiltres = new MappingJacksonValue(mapMargeProduit);
+
+        produitsFiltres.setFilters(listDeNosFiltres);
+
+        return produitsFiltres;
+    }
 
 }
